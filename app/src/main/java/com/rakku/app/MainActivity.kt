@@ -107,6 +107,7 @@ class MainActivity : ComponentActivity() {
                     mangaViewModel = mangaViewModel,
                     chatViewModel = chatViewModel,
                     profileViewModel = profileViewModel,
+                    clanViewModel = clanViewModel,
                     emailJustConfirmed = emailJustConfirmed
                 )
             }
@@ -123,6 +124,7 @@ fun MainAppScreen(
     mangaViewModel: MangaViewModel,
     chatViewModel: ChatViewModel,
     profileViewModel: ProfileViewModel,
+    clanViewModel: com.rakku.app.ui.clan.ClanViewModel,
     emailJustConfirmed: Boolean = false
 ) {
     val navController = rememberNavController()

@@ -671,16 +671,49 @@ class SupabaseRepository(
         } else emptyList()
     }
 
-    suspend fun sendGlobalChatMessage(message: String): Boolean = withContext(Dispatchers.IO) {
-        val userId = sessionManager.getUserId() ?: return@withContext false
-        val map = mapOf(
-            "user_id" to userId,
-            "message" to message
-        )
-        val request = newRequestBuilder("$SUPABASE_URL/rest/v1/global_chat_messages")
-            .post(moshi.adapter(Map::class.java).toJson(map).toRequestBody(jsonMediaType))
-            .build()
-        client.newCall(request).execute().isSuccessful
+    sealed class SendChatResult {
+        object Success : SendChatResult()
+        // remainingSeconds null kalau server gak ngasih detail sisa waktunya
+        // (tetap ditolak, cuma buat fallback UI kalau parsing gagal).
+        data class Cooldown(val remainingSeconds: Double?) : SendChatResult()
+        data class Error(val message: String) : SendChatResult()
+    }
+
+    // Kirim pesan Obrolan Global. Validasi cooldown SEBENARNYA ditegakkan di
+    // server lewat trigger trg_enforce_chat_cooldown (lihat
+    // chat_cooldown_migration.sql) - jadi walau ada bug/dilewatin di sisi app,
+    // server tetap nolak. Return value di sini cuma buat nampilin pesan yang
+    // pas ke user (termasuk sisa detik cooldown-nya kalau server kasih tau).
+    suspend fun sendGlobalChatMessage(message: String): SendChatResult = withContext(Dispatchers.IO) {
+        val userId = sessionManager.getUserId() ?: return@withContext SendChatResult.Error("Kamu belum login")
+        try {
+            val map = mapOf(
+                "user_id" to userId,
+                "message" to message
+            )
+            val request = newRequestBuilder("$SUPABASE_URL/rest/v1/global_chat_messages")
+                .post(moshi.adapter(Map::class.java).toJson(map).toRequestBody(jsonMediaType))
+                .build()
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                SendChatResult.Success
+            } else {
+                val bodyStr = response.body?.string() ?: ""
+                if (bodyStr.contains("chat_cooldown_active")) {
+                    val remaining = try {
+                        org.json.JSONObject(bodyStr).optString("details").toDoubleOrNull()
+                    } catch (e: Exception) {
+                        null
+                    }
+                    SendChatResult.Cooldown(remaining)
+                } else {
+                    android.util.Log.e("RakkuChat", "sendGlobalChatMessage gagal (HTTP ${response.code}): $bodyStr")
+                    SendChatResult.Error("Gagal mengirim pesan")
+                }
+            }
+        } catch (e: Exception) {
+            SendChatResult.Error(e.message ?: "Gagal mengirim pesan")
+        }
     }
 
     // TOPUP REQUESTS

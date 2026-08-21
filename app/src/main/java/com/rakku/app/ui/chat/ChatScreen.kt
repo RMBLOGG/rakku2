@@ -1,5 +1,6 @@
 package com.rakku.app.ui.chat
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,6 +68,17 @@ fun ChatScreen(
     val currentUserId = viewModel.sessionManager.getUserId()
     var messageInput by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val cooldownSeconds by viewModel.cooldownSeconds.collectAsState()
+    val sendError by viewModel.sendError.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(sendError) {
+        val err = sendError
+        if (err != null) {
+            Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
+            viewModel.consumeSendError()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -246,16 +259,29 @@ fun ChatScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         IconButton(
                             onClick = {
-                                if (messageInput.isNotBlank()) {
+                                if (messageInput.isNotBlank() && cooldownSeconds <= 0) {
                                     viewModel.sendMessage(messageInput)
                                     messageInput = ""
                                 }
                             },
+                            enabled = cooldownSeconds <= 0,
                             modifier = Modifier
                                 .size(44.dp)
-                                .background(CyanAccent, shape = CircleShape)
+                                .background(
+                                    if (cooldownSeconds > 0) DarkSurfaceVariant else CyanAccent,
+                                    shape = CircleShape
+                                )
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Kirim", tint = Color.Black)
+                            if (cooldownSeconds > 0) {
+                                Text(
+                                    text = "${cooldownSeconds}s",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            } else {
+                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Kirim", tint = Color.Black)
+                            }
                         }
                     }
                 } else {

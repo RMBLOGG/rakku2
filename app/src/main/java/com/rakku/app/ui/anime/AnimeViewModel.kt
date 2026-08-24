@@ -373,8 +373,8 @@ class AnimeViewModel(
                 // gak ada info poster sama sekali. detailState udah keisi duluan karena
                 // user pasti mampir ke halaman detail anime dulu sebelum ke sini.
                 val userId = sessionManager.getUserId()
+                val animeDetail = (_detailState.value as? AnimeDetailUiState.Success)?.detail
                 if (userId != null) {
-                    val animeDetail = (_detailState.value as? AnimeDetailUiState.Success)?.detail
                     supabaseRepository.saveWatchHistory(
                         userId = userId,
                         refId = animeSlug,
@@ -385,7 +385,26 @@ class AnimeViewModel(
                     )
                 }
 
-                val firstUrl = episode.streamUrl ?: episode.streamServers?.firstOrNull()?.url
+                // FALLBACK buat Episode Sebelumnya: API animeinweb cuma ngasih
+                // "episodeNext" di response-nya, gak ada "episodePrev" sama
+                // sekali (lihat AnimeinwebModels.kt) - jadi episode.prevEpisodeSlug
+                // dari API SELALU null. Di-akalin dengan nyari slug SEBELUM
+                // episode ini di daftar episode anime (animeDetail.episodes,
+                // urutannya sama persis kayak yang ditampilin di halaman detail).
+                // Sekalian jadi fallback buat "Selanjutnya" juga kalau-kalau API
+                // next-nya null (misal lagi di episode terakhir yang ke-cache).
+                val episodesList = animeDetail?.episodes ?: emptyList()
+                val currentIndex = episodesList.indexOfFirst { it.slug == episodeSlug }
+                val fallbackPrevSlug = if (currentIndex > 0) episodesList[currentIndex - 1].slug else null
+                val fallbackNextSlug = if (currentIndex in episodesList.indices && currentIndex < episodesList.size - 1) {
+                    episodesList[currentIndex + 1].slug
+                } else null
+                val resolvedEpisode = episode.copy(
+                    prevEpisodeSlug = episode.prevEpisodeSlug ?: fallbackPrevSlug,
+                    nextEpisodeSlug = episode.nextEpisodeSlug ?: fallbackNextSlug
+                )
+
+                val firstUrl = resolvedEpisode.streamUrl ?: resolvedEpisode.streamServers?.firstOrNull()?.url
                 // Coba ekstrak link video langsung (mp4/m3u8) via VideoExtractor -
                 // sama persis cara kerja Kuroflix. Kalau host-nya gak dikenal, resolve()
                 // balikin null dan VideoExtractor.resolveVideoUrl otomatis fallback
@@ -397,7 +416,7 @@ class AnimeViewModel(
                 } else null
 
                 _playerState.value = AnimePlayerUiState.Success(
-                    episode = episode,
+                    episode = resolvedEpisode,
                     selectedServerUrl = firstUrl,
                     activeSource = source,
                     comments = comments

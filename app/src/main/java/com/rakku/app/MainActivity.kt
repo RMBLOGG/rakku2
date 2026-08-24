@@ -282,7 +282,18 @@ fun MainAppScreen(
                         animeSlug = animeSlug,
                         episodeSlug = episodeSlug,
                         viewModel = animeViewModel,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onNavigateEpisode = { newAnimeSlug, newEpisodeSlug ->
+                            // launchSingleTop + popUpTo(inclusive) -> GANTI entry
+                            // player yang sekarang, bukan numpuk baru di back
+                            // stack. Jadi biar user pindah 20 episode
+                            // berturut-turut, tombol back tetap cuma butuh 1x
+                            // pencet buat balik ke halaman Detail Anime.
+                            navController.navigate("anime_player/$newAnimeSlug/$newEpisodeSlug") {
+                                launchSingleTop = true
+                                popUpTo("anime_player/{animeSlug}/{episodeSlug}") { inclusive = true }
+                            }
+                        }
                     )
                 }
             }
@@ -336,7 +347,17 @@ fun MainAppScreen(
                     MangaReaderScreen(
                         chapterUrl = decodedUrl,
                         viewModel = mangaViewModel,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onNavigateChapter = { newChapterUrl ->
+                            val encodedChapter = URLEncoder.encode(newChapterUrl, "UTF-8")
+                            // launchSingleTop + popUpTo(inclusive) -> GANTI entry
+                            // reader yang sekarang, sama kayak pola di anime_player,
+                            // biar back stack gak numpuk tiap pindah chapter.
+                            navController.navigate("manga_reader/$encodedChapter") {
+                                launchSingleTop = true
+                                popUpTo("manga_reader/{chapterUrl}") { inclusive = true }
+                            }
+                        }
                     )
                 }
             }

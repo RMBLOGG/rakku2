@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Flag
@@ -33,6 +34,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
@@ -73,7 +75,8 @@ fun AnimePlayerScreen(
     animeSlug: String,
     episodeSlug: String,
     viewModel: AnimeViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateEpisode: (String, String) -> Unit = { _, _ -> }
 ) {
     val playerState by viewModel.playerState.collectAsState()
     val currentUserId = viewModel.sessionManager.getUserId()
@@ -313,6 +316,43 @@ fun AnimePlayerScreen(
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
+
+                            // Tombol Episode Sebelumnya / Selanjutnya - slug-nya
+                            // dikasih langsung dari API (nextEpisodeSlug/
+                            // prevEpisodeSlug di response detail episode), jadi
+                            // gak perlu nyari sendiri dari daftar episode di
+                            // halaman detail anime. Null berarti udah di
+                            // episode pertama/terakhir, tombolnya di-disable.
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                val prevSlug = state.episode.prevEpisodeSlug
+                                val nextSlug = state.episode.nextEpisodeSlug
+                                OutlinedButton(
+                                    onClick = { if (prevSlug != null) onNavigateEpisode(animeSlug, prevSlug) },
+                                    enabled = prevSlug != null,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Sebelumnya", fontSize = 12.sp)
+                                }
+                                Button(
+                                    onClick = { if (nextSlug != null) onNavigateEpisode(animeSlug, nextSlug) },
+                                    enabled = nextSlug != null,
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = VioletPrimary),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("Selanjutnya", fontSize = 12.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
 
                             // Server Switcher
                             val servers = state.episode.streamServers ?: emptyList()

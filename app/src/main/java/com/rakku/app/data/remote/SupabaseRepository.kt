@@ -944,6 +944,8 @@ class SupabaseRepository(
         object ClanNotFound : ClanActionResult()
         object NameTaken : ClanActionResult()
         object InvalidName : ClanActionResult()
+        object TagTaken : ClanActionResult()
+        object InvalidTag : ClanActionResult()
         object AlreadyClaimedToday : ClanActionResult()
         data class Error(val message: String) : ClanActionResult()
     }
@@ -954,6 +956,8 @@ class SupabaseRepository(
         bodyStr.contains("not_in_clan") -> ClanActionResult.NotInClan
         bodyStr.contains("clan_full") -> ClanActionResult.ClanFull
         bodyStr.contains("clan_not_found") -> ClanActionResult.ClanNotFound
+        bodyStr.contains("tag_taken") -> ClanActionResult.TagTaken
+        bodyStr.contains("invalid_tag") -> ClanActionResult.InvalidTag
         bodyStr.contains("name_taken") -> ClanActionResult.NameTaken
         bodyStr.contains("invalid_name") -> ClanActionResult.InvalidName
         bodyStr.contains("already_claimed_today") -> ClanActionResult.AlreadyClaimedToday
@@ -962,10 +966,10 @@ class SupabaseRepository(
 
     // Bikin clan baru (potong 5.500 RC, pembuat otomatis jadi leader). Balikin
     // id clan yang baru dibuat kalau sukses (null kalau gagal - cek result
-    // buat alasannya).
-    suspend fun createClan(name: String, description: String?, avatarUrl: String?): Pair<ClanActionResult, String?> = withContext(Dispatchers.IO) {
+    // buat alasannya). tag = singkatan clan (opsional, 2-5 karakter, unik).
+    suspend fun createClan(name: String, description: String?, tag: String?, avatarUrl: String?): Pair<ClanActionResult, String?> = withContext(Dispatchers.IO) {
         try {
-            val map = mapOf("p_name" to name, "p_description" to description, "p_avatar_url" to avatarUrl)
+            val map = mapOf("p_name" to name, "p_description" to description, "p_tag" to tag, "p_avatar_url" to avatarUrl)
             val request = newRequestBuilder("$SUPABASE_URL/rest/v1/rpc/create_clan")
                 .post(moshi.adapter(Map::class.java).serializeNulls().toJson(map).toRequestBody(jsonMediaType))
                 .build()

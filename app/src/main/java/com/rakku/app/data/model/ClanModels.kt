@@ -8,6 +8,7 @@ import com.squareup.moshi.JsonClass
 data class ClanSummary(
     val id: String = "",
     val name: String = "",
+    val tag: String? = null,
     val avatar_url: String? = null,
     val level: Int = 1,
     val total_donated: Long = 0,
@@ -22,6 +23,7 @@ data class ClanSummary(
 data class ClanDetail(
     val id: String = "",
     val name: String = "",
+    val tag: String? = null,
     val description: String? = null,
     val avatar_url: String? = null,
     val leader_id: String? = null,

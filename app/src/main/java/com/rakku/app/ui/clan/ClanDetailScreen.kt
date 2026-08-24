@@ -296,7 +296,12 @@ private fun ClanInfoCard(detail: ClanDetail) {
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
-            Text(detail.name, fontSize = 19.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Text(
+                text = if (!detail.tag.isNullOrBlank()) "[${detail.tag}] ${detail.name}" else detail.name,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
             if (!detail.description.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(detail.description, fontSize = 12.sp, color = TextSecondary)

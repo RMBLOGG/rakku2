@@ -187,8 +187,8 @@ fun ClanScreen(
         CreateClanDialog(
             isBusy = isBusy,
             onDismiss = { showCreateDialog = false },
-            onConfirm = { name, desc ->
-                viewModel.createClan(name, desc) { newClanId ->
+            onConfirm = { name, desc, tag ->
+                viewModel.createClan(name, desc, tag) { newClanId ->
                     showCreateDialog = false
                     if (newClanId != null) {
                         onOpenClanDetail(newClanId)
@@ -302,7 +302,13 @@ private fun ClanRow(rank: Int, clan: ClanSummary, onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(10.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(clan.name, fontWeight = FontWeight.Bold, color = TextPrimary, fontSize = 13.sp, maxLines = 1)
+                Text(
+                    text = if (!clan.tag.isNullOrBlank()) "[${clan.tag}] ${clan.name}" else clan.name,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    maxLines = 1
+                )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "${clan.member_count}/${clan.capacity} anggota  •  ${formatRc(clan.total_donated)} RC",
@@ -329,10 +335,12 @@ private fun ClanRow(rank: Int, clan: ClanSummary, onClick: () -> Unit) {
 private fun CreateClanDialog(
     isBusy: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, String?) -> Unit
+    onConfirm: (String, String?, String?) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var tag by remember { mutableStateOf("") }
+    val tagValid = tag.isBlank() || (tag.length in 2..5)
 
     AlertDialog(
         onDismissRequest = { if (!isBusy) onDismiss() },
@@ -362,6 +370,26 @@ private fun CreateClanDialog(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 OutlinedTextField(
+                    value = tag,
+                    onValueChange = { v ->
+                        val filtered = v.uppercase().filter { it.isLetterOrDigit() }
+                        if (filtered.length <= 5) tag = filtered
+                    },
+                    label = { Text("Tag Clan (opsional, 2-5 karakter)", fontSize = 12.sp) },
+                    placeholder = { Text("Contoh: RKKU", color = TextMuted, fontSize = 12.sp) },
+                    singleLine = true,
+                    isError = !tagValid,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = VioletPrimary,
+                        unfocusedBorderColor = DarkBorder,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        cursorColor = CyanAccent
+                    )
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
                     value = description,
                     onValueChange = { if (it.length <= 150) description = it },
                     label = { Text("Deskripsi (opsional)", fontSize = 12.sp) },
@@ -379,8 +407,8 @@ private fun CreateClanDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = !isBusy && name.trim().length >= 3,
-                onClick = { onConfirm(name.trim(), description.trim().ifBlank { null }) }
+                enabled = !isBusy && name.trim().length >= 3 && tagValid,
+                onClick = { onConfirm(name.trim(), description.trim().ifBlank { null }, tag.ifBlank { null }) }
             ) {
                 Text(if (isBusy) "Memproses..." else "Buat", color = CyanAccent, fontWeight = FontWeight.Bold)
             }

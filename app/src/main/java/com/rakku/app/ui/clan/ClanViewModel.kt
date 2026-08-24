@@ -101,10 +101,10 @@ class ClanViewModel(
         }
     }
 
-    fun createClan(name: String, description: String?, onResult: (String?) -> Unit) {
+    fun createClan(name: String, description: String?, tag: String?, onResult: (String?) -> Unit) {
         viewModelScope.launch {
             _isBusy.value = true
-            val (result, clanId) = supabaseRepository.createClan(name, description, null)
+            val (result, clanId) = supabaseRepository.createClan(name, description, tag, null)
             _isBusy.value = false
             _events.value = ClanEvent.Message(clanActionMessage(result, forCreate = true))
             if (result is SupabaseRepository.ClanActionResult.Success && clanId != null) {
@@ -187,6 +187,8 @@ class ClanViewModel(
             is SupabaseRepository.ClanActionResult.ClanNotFound -> "Clan tidak ditemukan."
             is SupabaseRepository.ClanActionResult.NameTaken -> "Nama clan sudah dipakai, coba nama lain."
             is SupabaseRepository.ClanActionResult.InvalidName -> "Nama clan minimal 3 karakter."
+            is SupabaseRepository.ClanActionResult.TagTaken -> "Tag clan sudah dipakai, coba tag lain."
+            is SupabaseRepository.ClanActionResult.InvalidTag -> "Tag clan 2-5 karakter, huruf/angka aja."
             is SupabaseRepository.ClanActionResult.AlreadyClaimedToday -> "Kamu sudah klaim Daily Claim hari ini."
             is SupabaseRepository.ClanActionResult.Error -> "Terjadi kesalahan, coba lagi."
         }

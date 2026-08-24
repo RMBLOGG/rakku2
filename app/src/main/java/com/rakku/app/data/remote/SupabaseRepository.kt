@@ -666,6 +666,13 @@ class SupabaseRepository(
                     msg.active_border_url = profiles[msg.user_id]?.active_border_url
                     msg.user_number = profiles[msg.user_id]?.user_number
                 }
+                // Badge tag clan di sebelah username (lihat get_user_clan_tags
+                // di clan_chat_badge_migration.sql) - null kalau pengirimnya
+                // lagi gak gabung clan manapun / clan-nya gak punya tag.
+                val clanTags = getUserClanTags(allUserIds)
+                reversed.forEach { msg ->
+                    msg.clan_tag = clanTags[msg.user_id]
+                }
             }
             reversed
         } else emptyList()
@@ -1139,6 +1146,35 @@ class SupabaseRepository(
             } else null
         } catch (e: Exception) {
             null
+        }
+    }
+
+    // Ambil tag clan buat sekumpulan user_id sekaligus (dipakai buat badge
+    // tag clan di sebelah username di Obrolan Global - lihat
+    // clan_chat_badge_migration.sql). User yang gak gabung clan / clan-nya
+    // gak punya tag gak bakal muncul di map hasilnya.
+    private suspend fun getUserClanTags(userIds: List<String>): Map<String, String> = withContext(Dispatchers.IO) {
+        if (userIds.isEmpty()) return@withContext emptyMap()
+        try {
+            val map = mapOf("p_user_ids" to userIds)
+            val request = newRequestBuilder("$SUPABASE_URL/rest/v1/rpc/get_user_clan_tags")
+                .post(moshi.adapter(Map::class.java).toJson(map).toRequestBody(jsonMediaType))
+                .build()
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                val bodyStr = response.body?.string() ?: "[]"
+                val arr = org.json.JSONArray(bodyStr)
+                val result = mutableMapOf<String, String>()
+                for (i in 0 until arr.length()) {
+                    val obj = arr.optJSONObject(i) ?: continue
+                    val uid = obj.optString("user_id")
+                    val tag = obj.optString("tag")
+                    if (uid.isNotBlank() && tag.isNotBlank()) result[uid] = tag
+                }
+                result
+            } else emptyMap()
+        } catch (e: Exception) {
+            emptyMap()
         }
     }
 

@@ -130,7 +130,13 @@ data class GlobalChatMessage(
     var active_border_url: String? = null,
     // Nomor ID publik pengirim (sama kayak "ID: #x" di ProfileScreen). Juga
     // gak ada di tabel global_chat_messages, diisi dari get_public_profiles.
-    var user_number: Long? = null
+    var user_number: Long? = null,
+    // Tag/singkatan clan pengirim (mis. "RKKU"), buat badge di sebelah
+    // username di Obrolan Global. Gak ada di tabel global_chat_messages -
+    // diisi belakangan lewat RPC get_user_clan_tags (lihat
+    // getGlobalChatMessages() di SupabaseRepository). null kalau pengirim
+    // gak lagi gabung clan manapun.
+    var clan_tag: String? = null
 )
 
 @JsonClass(generateAdapter = true)

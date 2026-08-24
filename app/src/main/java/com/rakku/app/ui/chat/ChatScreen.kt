@@ -192,6 +192,22 @@ fun ChatScreen(
                                             color = CyanAccent
                                         )
                                     }
+                                    if (!msg.clan_tag.isNullOrBlank()) {
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(VioletPrimary.copy(alpha = 0.25f))
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = msg.clan_tag ?: "",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = CyanAccent
+                                            )
+                                        }
+                                    }
                                     Spacer(modifier = Modifier.width(6.dp))
                                     RoleBadge(role = msg.role)
                                     if (msg.user_number != null) {

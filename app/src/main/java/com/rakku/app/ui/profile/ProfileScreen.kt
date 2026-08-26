@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -215,8 +216,9 @@ fun ProfileScreen(
 
                     OutlinedTextField(
                         value = newUsername,
-                        onValueChange = { newUsername = it },
+                        onValueChange = { if (it.length <= 20) newUsername = it },
                         label = { Text("Username", color = TextSecondary) },
+                        supportingText = { Text("${newUsername.length}/20", color = TextSecondary, fontSize = 11.sp) },
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = CyanAccent,
@@ -294,12 +296,16 @@ fun ProfileScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     val packages = listOf(
-                        100 to "Rp 10.000",
-                        300 to "Rp 28.000",
-                        600 to "Rp 50.000",
-                        1200 to "Rp 95.000"
+                        1500 to "Rp12.000",
+                        4000 to "Rp30.000",
+                        7000 to "Rp55.000",
+                        12000 to "Rp85.000",
+                        140000 to "Rp700.000"
                     )
-                    packages.forEach { (coinCount, price) ->
+                    packages.forEachIndexed { index, (coinCount, price) ->
+                        // Tier terakhir (paling gede) dikasih ikon mahkota,
+                        // bukan koin biasa - nandain ini tier spesial/VIP.
+                        val isSpecialTier = index == packages.lastIndex
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -308,14 +314,23 @@ fun ProfileScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_rakku_coin),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.size(16.dp).clip(CircleShape)
-                                )
+                                if (isSpecialTier) {
+                                    Icon(
+                                        imageVector = Icons.Default.WorkspacePremium,
+                                        contentDescription = null,
+                                        tint = androidx.compose.ui.graphics.Color(0xFFFFD700),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                } else {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ic_rakku_coin),
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.size(16.dp).clip(CircleShape)
+                                    )
+                                }
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("$coinCount Koin", fontSize = 12.sp, color = TextPrimary)
+                                Text("${formatRcAmount(coinCount)} RC", fontSize = 12.sp, color = TextPrimary)
                             }
                             Text(price, fontSize = 12.sp, color = CyanAccent, fontWeight = FontWeight.Bold)
                         }
@@ -476,7 +491,9 @@ fun ProfileScreen(
                     text = profile.username ?: "User",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = TextPrimary,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -680,5 +697,17 @@ fun ProfileMenuItem(
             Text(label, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
         }
     }
+}
+
+// Format angka RC pakai pemisah ribuan gaya Indonesia (titik), mis.
+// 140000 -> "140.000". Dipakai di daftar tier Top Up Rakku Koin.
+private fun formatRcAmount(value: Int): String {
+    val s = value.toString()
+    val sb = StringBuilder()
+    for ((i, c) in s.reversed().withIndex()) {
+        if (i != 0 && i % 3 == 0) sb.append('.')
+        sb.append(c)
+    }
+    return sb.reverse().toString()
 }
 

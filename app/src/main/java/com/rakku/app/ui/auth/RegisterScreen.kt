@@ -99,7 +99,7 @@ fun RegisterScreen(
             // Username Field
             OutlinedTextField(
                 value = username,
-                onValueChange = { username = it },
+                onValueChange = { if (it.length <= 20) username = it },
                 label = { Text("Username", color = TextSecondary) },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = VioletPrimary) },
                 singleLine = true,

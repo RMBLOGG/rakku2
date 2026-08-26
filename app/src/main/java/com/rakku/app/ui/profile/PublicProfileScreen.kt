@@ -237,7 +237,9 @@ private fun ProfileHeaderCard(profile: com.rakku.app.data.model.PublicProfileSta
                 text = profile.username ?: "User",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = TextPrimary,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(6.dp))
